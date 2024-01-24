@@ -5,6 +5,7 @@ from datetime import datetime
 from database import db
 from models import LeaveRequest, User
 from sqlalchemy import cast, Date, func
+from datetime import timedelta
 
 
 app = Flask(__name__)
@@ -89,17 +90,30 @@ def request_leave():
         flash('Invalid date format. Please use YYYY-MM-DD format.')
         return redirect(url_for('index'))
 
+    today = datetime.today().date()
+    max_advance_date = today + timedelta(days=60)  # 2 months in advance
+
+    if leave_date.date() > max_advance_date:
+        flash('You cannot request leave more than 2 months in advance.')
+        return redirect(url_for('index'))
+
     existing_request = LeaveRequest.query.filter(func.date(LeaveRequest.leave_date) == leave_date.date()).first()
 
     if existing_request:
         flash('A leave request already exists for this date.')
         return redirect(url_for('index'))
-    elif leave_date.date() <= datetime.today().date():
+    elif leave_date.date() <= today:
         flash('You cannot request leave for today or a past date.')
         return redirect(url_for('index'))
     else:
+    # else:
+    #     if current_user.leave_quota <= 0:
+    #         flash('No remaining leave quota')
+    #         return redirect(url_for('index'))  # or wherever you want to redirect to
+
         new_leave_request = LeaveRequest(username=current_user.username, leave_date=leave_date, reason=reason)
         db.session.add(new_leave_request)
+        # current_user.leave_quota -= 1
         db.session.commit()
 
         flash('Your leave request has been submitted.')
