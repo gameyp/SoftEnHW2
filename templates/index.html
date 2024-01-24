@@ -24,9 +24,16 @@
         <input type="submit" value="Submit">
     </form>
     <ul>
-        {% for request in leave_requests %}
-        <li>{{ request.username }} - {{ request.leave_date }} - {{ request.reason }}</li>
-        {% endfor %}
-    </ul>
+      {% for request in leave_requests %}
+      <li>
+          {{ request.username }} - {{ request.leave_date }} - {{ request.reason }}
+          {% if request.username == current_user.username and request.leave_date >= today %}
+            <form method="POST" action="{{ url_for('delete_leave_request', leave_request_id=request.id) }}">
+              <input type="submit" value="Delete">
+            </form>
+          {% endif %}
+      </li>
+      {% endfor %}
+  </ul>
 </body>
 </html>

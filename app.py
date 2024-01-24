@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, date
 from database import db
 from models import LeaveRequest, User
 from sqlalchemy import cast, Date, func
@@ -29,7 +29,7 @@ def load_user(user_id):
 @login_required
 def index():
     leave_requests = LeaveRequest.query.all()
-    return render_template('index.html', leave_requests=leave_requests)
+    return render_template('index.html', today=date.today(), leave_requests=leave_requests)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -118,6 +118,18 @@ def request_leave():
 
         flash('Your leave request has been submitted.')
         return redirect(url_for('index'))
+    
+@app.route('/delete_leave_request/<int:leave_request_id>', methods=['POST'])
+@login_required
+def delete_leave_request(leave_request_id):
+    leave_request = LeaveRequest.query.get(leave_request_id)
+    if leave_request and leave_request.username == current_user.username and leave_request.leave_date >= datetime.today().date():
+        db.session.delete(leave_request)
+        db.session.commit()
+        flash('Leave request deleted')
+    else:
+        flash('Cannot delete leave request')
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     with app.app_context():
