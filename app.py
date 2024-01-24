@@ -60,7 +60,7 @@ def register():
         username = request.form['username']
         password = request.form['password']
         hashed_password = generate_password_hash(password)
-        new_user = User(username=username, password_hash=hashed_password)
+        new_user = User(username=username, password_hash=hashed_password, leave_count=10)
 
         if User.query.filter_by(username=username).first():
             flash('Username already exists. Choose a different one.')
@@ -91,7 +91,7 @@ def request_leave():
         return redirect(url_for('index'))
 
     today = datetime.today().date()
-    max_advance_date = today + timedelta(days=60)  # 2 months in advance
+    max_advance_date = today + timedelta(days=60)
 
     if leave_date.date() > max_advance_date:
         flash('You cannot request leave more than 2 months in advance.')
@@ -107,13 +107,13 @@ def request_leave():
         return redirect(url_for('index'))
     else:
     # else:
-    #     if current_user.leave_quota <= 0:
-    #         flash('No remaining leave quota')
-    #         return redirect(url_for('index'))  # or wherever you want to redirect to
+        if current_user.leave_count is None or current_user.leave_count <= 0:
+            flash('No remaining leave quota')
+            return redirect(url_for('index'))
 
         new_leave_request = LeaveRequest(username=current_user.username, leave_date=leave_date, reason=reason)
         db.session.add(new_leave_request)
-        # current_user.leave_quota -= 1
+        current_user.leave_count -= 1
         db.session.commit()
 
         flash('Your leave request has been submitted.')
