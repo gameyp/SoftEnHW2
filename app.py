@@ -97,8 +97,8 @@ def request_leave():
         flash('You cannot request leave more than 2 months in advance.')
         return redirect(url_for('index'))
 
-    existing_request = LeaveRequest.query.filter(func.date(LeaveRequest.leave_date) == leave_date.date()).first()
-
+    existing_request = LeaveRequest.query.filter(func.date(LeaveRequest.leave_date) == leave_date.date(), LeaveRequest.username == current_user.username).first()
+    
     if existing_request:
         flash('A leave request already exists for this date.')
         return redirect(url_for('index'))
