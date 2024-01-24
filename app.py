@@ -4,6 +4,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from database import db
 from models import LeaveRequest, User
+from sqlalchemy import cast, Date, func
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key'
@@ -87,13 +89,21 @@ def request_leave():
         flash('Invalid date format. Please use YYYY-MM-DD format.')
         return redirect(url_for('index'))
 
-    new_leave_request = LeaveRequest(username=current_user.username, leave_date=leave_date, reason=reason)
-    db.session.add(new_leave_request)
-    db.session.commit()
+    existing_request = LeaveRequest.query.filter(func.date(LeaveRequest.leave_date) == leave_date.date()).first()
 
-    flash('Your leave request has been submitted.')
-    return redirect(url_for('index'))
+    if existing_request:
+        flash('A leave request already exists for this date.')
+        return redirect(url_for('index'))
+    elif leave_date.date() <= datetime.today().date():
+        flash('You cannot request leave for today or a past date.')
+        return redirect(url_for('index'))
+    else:
+        new_leave_request = LeaveRequest(username=current_user.username, leave_date=leave_date, reason=reason)
+        db.session.add(new_leave_request)
+        db.session.commit()
 
+        flash('Your leave request has been submitted.')
+        return redirect(url_for('index'))
 
 if __name__ == '__main__':
     with app.app_context():
